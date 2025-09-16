@@ -47,65 +47,6 @@ go mod download
 go build -o simple-ci .
 ```
 
-## Usage
-
-### Command Line Interface
-
-```bash
-# Addition
-./simple-ci add 5 3
-# Output: Result: 8.00
-
-# Subtraction
-./simple-ci subtract 10 4
-# Output: Result: 6.00
-
-# Multiplication
-./simple-ci multiply 7 6
-# Output: Result: 42.00
-
-# Division
-./simple-ci divide 15 3
-# Output: Result: 5.00
-
-# Division by zero (returns error)
-./simple-ci divide 5 0
-# Output: Error: division by zero is not allowed
-```
-
-### Programmatic Usage
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/raytr/simple-ci/calculator"
-)
-
-func main() {
-    // Basic operations
-    result := calculator.Add(5.5, 3.2)
-    fmt.Printf("5.5 + 3.2 = %.2f\n", result)
-    
-    // Division with error handling
-    result, err := calculator.Divide(10, 3)
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
-    } else {
-        fmt.Printf("10 / 3 = %.2f\n", result)
-    }
-    
-    // Advanced operations
-    sqrt_result, err := calculator.Sqrt(16)
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
-    } else {
-        fmt.Printf("√16 = %.2f\n", sqrt_result)
-    }
-}
-```
-
 ## Testing
 
 ### Run Unit Tests
@@ -179,55 +120,6 @@ To enable the CI pipeline to block merges with failing tests:
 4. Enable "Require status checks to pass before merging"
 5. Select the required checks: `test`, `security`, `lint`
 
-## Development
-
-### Adding New Features
-
-1. Create a new branch: `git checkout -b feature/new-operation`
-2. Add your function to `calculator/calculator.go`
-3. Add comprehensive tests to `calculator/calculator_test.go`
-4. Update the CLI in `main.go` if needed
-5. Run tests locally: `go test ./...`
-6. Commit and push your changes
-7. Create a pull request
-
-### Code Quality Standards
-
-- All functions must have documentation comments
-- Maintain 80%+ test coverage
-- Follow Go formatting standards (`gofmt`)
-- Pass all linter checks
-- Handle errors appropriately
-- Include both positive and negative test cases
-
-## Available Operations
-
-### Basic Operations
-- `Add(a, b float64) float64` - Addition
-- `Subtract(a, b float64) float64` - Subtraction  
-- `Multiply(a, b float64) float64` - Multiplication
-- `Divide(a, b float64) (float64, error)` - Division with zero check
-
-### Advanced Operations
-- `Power(a, b float64) float64` - Exponentiation
-- `Sqrt(a float64) (float64, error)` - Square root with negative check
-- `Abs(a float64) float64` - Absolute value
-
-### Utility Functions
-- `IsEven(n int) bool` - Check if number is even
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
 
 ## CI/CD Status
 
