@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        go-version: [1.21.x, 1.22.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Check formatting
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Generate coverage report
+      run: go tool cover -html=coverage.out -o coverage.html
+
+    - name: Check test coverage
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+%')
+        echo "Coverage: $COVERAGE"
+        # Fail if coverage is below 80%
+        COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
+        if (( $(echo "$COVERAGE_NUM < 80.0" | bc -l) )); then
+          echo "Coverage $COVERAGE is below 80% threshold"
+          exit 1
+        fi
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Build application
+      run: go build -v ./...
+
+    - name: Run integration tests
+      run: |
+        # Build the binary
+        go build -o simple-ci .
+        
+        # Test the CLI functionality
+        echo "Testing CLI functionality..."
+        
+        # Test addition
+        result=$(./simple-ci add 5 3)
+        expected="Result: 8.00"
+        if [ "$result" != "$expected" ]; then
+          echo "Addition test failed. Expected: $expected, Got: $result"
+          exit 1
+        fi
+        
+        # Test division
+        result=$(./simple-ci divide 10 2)
+        expected="Result: 5.00"
+        if [ "$result" != "$expected" ]; then
+          echo "Division test failed. Expected: $expected, Got: $result"
+          exit 1
+        fi
+        
+        # Test division by zero (should fail)
+        if ./simple-ci divide 10 0 >/dev/null 2>&1; then
+          echo "Division by zero should have failed but didn't"
+          exit 1
+        fi
+        
+        echo "All integration tests passed!"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Gosec Security Scanner
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: './...'
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.22.x
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+        args: --timeout=5m
